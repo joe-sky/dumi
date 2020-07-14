@@ -30,6 +30,22 @@ export default () => <Button type="primary">我是 antd 的按钮</Button>;
 
 <code src="./demo/modal.jsx" />
 
+## 控制 Demo 预览器的功能按钮
+
+<code src="./demo/show-preview.tsx" hideActions='["CSB", "EXTERNAL"]' />
+
+```jsx
+/**
+ * title: 代码块
+ * desc: '代码块中通过块注释指定，例：hideActions: ["CSB", "EXTERNAL"]'
+ * hideActions: ["CSB", "EXTERNAL"]
+ */
+import React from 'react';
+import { Button } from 'antd';
+
+export default () => <Button type="primary">我用来测试</Button>;
+```
+
 # 一级标题
 
 ## 二级标题

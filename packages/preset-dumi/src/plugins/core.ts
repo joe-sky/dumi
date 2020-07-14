@@ -22,7 +22,7 @@ function mergeUserConfig(defaultOpts: { [key: string]: any }, api: IApi): IDumiO
 
   // non-default values keys
   ['description', 'logo', 'menus', 'navs'].forEach(key => {
-    if (api.config[key]) {
+    if (api.config[key] !== undefined) {
       result[key] = api.config[key];
     }
   });
@@ -120,7 +120,10 @@ export default function(api: IApi) {
       logo: opts.logo,
       desc: opts.description,
       mode: opts.mode,
-      repoUrl: getRepoUrl(pkg.repository?.url || pkg.repository),
+      repository: {
+        url: getRepoUrl(pkg.repository?.url || pkg.repository),
+        branch: pkg.repository?.branch || 'master',
+      },
       algolia: opts.algolia,
     };
 
@@ -145,7 +148,7 @@ export default function(api: IApi) {
     urlLoaderExcludes: [/\.md$/],
     // pass empty routes if pages path does not exist and no routes config
     // to avoid umi throw src directory not exists error
-    routes: fs.existsSync(api.paths.absPagesPath) && !api.userConfig.routes ? undefined : [],
+    routes: fs.existsSync(api.paths.absSrcPath) && !api.userConfig.routes ? undefined : [],
   }));
 
   // configure loader for .md file
@@ -230,6 +233,15 @@ export default function(api: IApi) {
       ...opts.resolve.examples.map(key => path.join(api.paths.cwd, key, '*.{tsx,jsx}')),
     ];
   });
+
+  // register plugin-analytics
+  if (
+    !api.hasPlugins(['@umijs/plugin-analytics']) &&
+    // search plugins of other presets
+    api.service._extraPlugins.every(({ id }) => id !== '@umijs/plugin-analytics')
+  ) {
+    api.registerPlugins([require.resolve('@umijs/plugin-analytics')]);
+  }
 
   // TODO: CLI help info
   // TODO: site title support for routes

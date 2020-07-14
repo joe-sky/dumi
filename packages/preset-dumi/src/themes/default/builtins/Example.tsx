@@ -22,12 +22,13 @@ export default (props: IRouteProps & { route: any }) => {
             />
             <a
               target="_blank"
+              rel="noopener noreferrer"
               href={props.route.meta.examplePath}
               className="__dumi-default-icon"
             />
           </span>
         </div>
-        <iframe src={props.route.meta.examplePath} ref={elm} style={{ height }} />
+        <iframe src={props.route.meta.examplePath} ref={elm} style={{ height }} title="dumi"/>
       </div>
     )
   );

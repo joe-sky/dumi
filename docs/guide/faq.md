@@ -163,5 +163,85 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: ./docs-dist
 ```
+
+## 开发阶段，如何配置 md 文件中的样式按需引入？
+
+dumi 会对 pkgName/es、pkgName/lib 做 alias，[详情见](https://github.com/umijs/dumi/blob/master/packages/preset-dumi/src/plugins/core.ts#L198)
+
+配置 `extraBabelPlugins` (注意是 `.umirc.ts` 的配置项，不是 `.fatherrc.ts`)，加入 [`babel-plugin-import`](https://github.com/ant-design/babel-plugin-import)，根据目录结构合理配置
+
+例如：
+
+目录结构：
+
+```shell
+.
+├── scripts
+│   └── hack-depend.js
+├── src
+│   ├── Button
+│   │   ├── style
+│   │   │   ├── index.less
+│   │   │   └── mixin.less
+│   │   ├── index.md
+│   │   └── index.tsx
+│   ├── style
+│   │   ├── base.less
+│   │   ├── color.less
+│   │   └── mixin.less
+│   └── index.ts
+├── .editorconfig
+├── .fatherrc.ts
+├── .gitignore
+├── .prettierignore
+├── .prettierrc
+├── .umirc.ts
+├── README.md
+├── package.json
+├── tsconfig.json
+├── typings.d.ts
+└── yarn.lock
+```
+
+配置 .umirc.ts：
+
+```tsx | pure
+extraBabelPlugins: [
+  [
+    'import',
+    {
+      libraryName: 'lean',
+      camel2DashComponentName: false,
+      customStyleName: name => {
+        return `./style/index.less`; // 注意：这里 ./ 不可省略
+      },
+    },
+    'lean',
+  ],
+];
+```
+
+在 md 中引入组件：
+
+```tsx | pure
+import { Button } from 'lean'; // 这里会按需引入样式
+```
+
+## dumi 如何支持对 Swift、C#、Kotlin 等语言的语法高亮？
+
+dumi 语法高亮使用的 [prism-react-renderer](https://github.com/FormidableLabs/prism-react-renderer) ，是一款基于 [PrismJS](https://github.com/PrismJS/prism) 实现的 React 组件。 `PrismJS` 支持的语言种类很多，但 `prism-react-renderer` 在实现的时候对部分语言进行了移除，其具体原因可以查看 [Adding Out of the Box Languages](https://github.com/FormidableLabs/prism-react-renderer/issues/53#issuecomment-546653848)。
+
+我们在 dumi 中可以通过下面的方式，添加对其他语言的支持：
+
+```tsx | pure
+// src/app.ts
+import Prism from "prism-react-renderer/prism";
+
+(typeof global !== "undefined" ? global : window).Prism = Prism;
+
+require("prismjs/components/prism-kotlin");
+require("prismjs/components/prism-csharp");
+```
+

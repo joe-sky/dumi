@@ -64,9 +64,14 @@ export interface IPreviewerProps {
     };
   };
   /**
+   * configurations for action button
+   */
+  hideActions: ('CSB' | 'EXTERNAL' | 'RIDDLE')[];
+  /**
    * show source code by default
    */
   defaultShowCode?: boolean;
+  className?: string;
 }
 
 class Previewer extends Component<IPreviewerProps> {
@@ -83,25 +88,29 @@ class Previewer extends Component<IPreviewerProps> {
     const { source, defaultShowCode = false } = this.props;
 
     // init data for codesandbox
-    this.initCSBData();
+    if (!this.props.hideActions?.includes('CSB')) {
+      this.initCSBData();
+    }
 
     // prioritize display tsx
     this.setState({ sourceType: source.tsx ? 'tsx' : 'jsx', showSource: defaultShowCode });
 
-    // detect network via img request
-    const img = document.createElement('img');
+    if (!this.props.hideActions?.includes('RIDDLE')) {
+      // detect network via img request
+      const img = document.createElement('img');
 
-    // interrupt image pending after 200ms
-    setTimeout(() => {
-      img.src = '';
-    }, 200);
+      // interrupt image pending after 200ms
+      setTimeout(() => {
+        img.src = '';
+      }, 200);
 
-    img.onload = () => {
-      this.setState({ showRiddle: true });
-    };
+      img.onload = () => {
+        this.setState({ showRiddle: true });
+      };
 
-    img.src =
-      'https://private-alipayobjects.alipay.com/alipay-rmsdeploy-image/rmsportal/RKuAiriJqrUhyqW.png';
+      img.src =
+        'https://private-alipayobjects.alipay.com/alipay-rmsdeploy-image/rmsportal/RKuAiriJqrUhyqW.png';
+    }
   }
 
   initCSBData = () => {
@@ -199,6 +208,7 @@ ${issueLink}`,
       path,
       dependencies,
       files,
+      ...props
     } = this.props;
     const { showSource, sourceType, showRiddle, currentFile } = this.state;
     const raw = source[sourceType];
@@ -211,7 +221,7 @@ ${issueLink}`,
     }
 
     return (
-      <div className="__dumi-default-previewer">
+      <div {...props} className={['__dumi-default-previewer', props.className].join(' ')}>
         <div
           className="__dumi-default-previewer-demo"
           style={{
@@ -229,7 +239,7 @@ ${issueLink}`,
           dangerouslySetInnerHTML={{ __html: desc }}
         />
         <div className="__dumi-default-previewer-actions">
-          {!hasExternalFile && (
+          {!this.props.hideActions?.includes('EXTERNAL') && !hasExternalFile && (
             <>
               <CsbButton type={this.props.source.tsx ? 'tsx' : 'jsx'} base64={this.state.CSBData}>
                 <button className="__dumi-default-icon" role="codesandbox" type="submit" />
@@ -257,7 +267,7 @@ ${issueLink}`,
               )}
             </>
           )}
-          {path && (
+          {!this.props.hideActions?.includes('CSB') && path && (
             <a target="_blank" rel="noopener noreferrer" href={path}>
               <button className="__dumi-default-icon" role="open-demo" type="button" />
             </a>
@@ -277,7 +287,7 @@ ${issueLink}`,
             />
           )}
           <button
-            className="__dumi-default-icon"
+            className={`__dumi-default-icon${showSource ? ' __dumi-default-btn-expand' : ''}`}
             role="source"
             type="button"
             onClick={() => this.setState({ showSource: !showSource })}

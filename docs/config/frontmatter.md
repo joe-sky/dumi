@@ -115,7 +115,7 @@ group:
 - 默认值：`null`
 - 详细：
 
-控制该文档组的显示顺序，数值越大排序越靠前。
+控制该文档组的显示顺序，数值越小排序越靠前。
 
 ### nav
 
@@ -248,6 +248,36 @@ features:
 - 详细：
 
 用于控制当前 demo 的包裹容器是否默认展开源代码显示。
+
+### hideActions
+
+- 类型：`Array<'CSB' | 'EXTERNAL'>`
+- 默认值：`[]`
+- 详细：
+
+用于控制 Demo 预览器部分功能按钮的隐藏，配置值含义如下：
+
+- CSB: 隐藏『在 codesandbox.io 中打开』的按钮
+- EXTERNAL: 隐藏『在新窗口打开』的按钮
+
+通过 code 标签的属性配置：
+
+```html
+<!-- 注意，单引号为必备，要确保值为有效 JSON 字符串 -->
+<code hideActions='["CSB"]' />
+```
+
+通过 frontmatter 配置：
+
+```ts
+/**
+ * hideActions: ["CSB"]
+ * hideActions:
+ *   - CSB
+ */
+
+// 以上两种方式均可识别
+```
 
 ### 通过 `code` 标签控制
 

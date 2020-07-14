@@ -13,7 +13,7 @@ export const NavbarLink: FC<{ href: string }> = ({ href, children }) => {
   return /^\/[\w-]/.test(href) ? (
     <NavLink to={href}>{children}</NavLink>
   ) : (
-    <a target="_blank" href={href}>
+    <a target="_blank" rel="noopener noreferrer" href={href}>
       {children}
       {href && (
         <svg
@@ -54,6 +54,7 @@ const Navbar: FC<INavbarProps> = ({ onMobileMenuClick, navPrefix }) => {
           backgroundImage: logo && `url('${logo}')`,
         }}
         to={rootPath}
+        data-plaintext={logo === false || undefined}
       >
         {title}
       </Link>
@@ -72,7 +73,7 @@ const Navbar: FC<INavbarProps> = ({ onMobileMenuClick, navPrefix }) => {
           );
 
           return (
-            <NavbarLink href={nav.path} key={nav.path}>
+            <NavbarLink href={nav.path} key={nav.path || nav.title}>
               {nav.title}
               {child}
             </NavbarLink>

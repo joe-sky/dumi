@@ -8,22 +8,25 @@ import transformer from '../transformer';
 export default (fileAbsPath: string): { [key: string]: any } => {
   const { ext } = path.parse(fileAbsPath);
   const content = fs.readFileSync(fileAbsPath).toString();
-  let result;
+  let meta;
 
   switch (ext) {
     case '.tsx':
     case '.jsx':
     case '.ts':
     case '.js':
-      result = transformer.jsx(content).config;
+      ({ meta } = transformer.code(content));
       break;
 
     case '.md':
-      result = transformer.markdown(content, { fileAbsPath, onlyConfig: true }).config;
+      ({ meta } = transformer.markdown(content, fileAbsPath));
       break;
 
     default:
   }
+
+  // remove useless demo frontmatters
+  const { demos, ...result } = meta;
 
   return result;
 };

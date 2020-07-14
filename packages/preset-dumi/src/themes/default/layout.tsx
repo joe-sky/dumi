@@ -23,7 +23,10 @@ export interface ILayoutProps {
   menus: IMenu[];
   locales: ILocale[];
   mode: IDumiOpts['mode'];
-  repoUrl?: string;
+  repository?: {
+    url: string;
+    branch?: string;
+  };
 }
 
 /**
@@ -33,13 +36,11 @@ export interface ILayoutProps {
  * @returns { slugs = [] }
  */
 const findCurrentRouteMeta = (route, location) => {
-  const currentRouteMeta = (route as any).routes.find(
-    currentRoute => currentRoute.path === location.pathname,
-  )?.meta;
-  if (currentRouteMeta) {
-    return currentRouteMeta;
-  }
-  return {};
+  // remove suffix '/' from pathname
+  const pathWithoutSuffix = location.pathname.replace(/(.)\/$/, '$1');
+  const currentRoute = (route as any).routes.find(item => item.path === pathWithoutSuffix);
+
+  return currentRoute ? currentRoute.meta || {} : null;
 };
 
 function getOffsetTop(target: HTMLElement, container: HTMLElement | Window): number {
@@ -100,7 +101,7 @@ export default class Layout extends Component<ILayoutProps & RouteProps> {
       menus: [],
     };
 
-    // find menu in reverse way to fallback to the first menu
+    // find locale in reverse way
     for (let i = locales.length - 1; i >= 0; i -= 1) {
       const localeName = (locales[i] || { name: '' }).name;
 
@@ -110,16 +111,31 @@ export default class Layout extends Component<ILayoutProps & RouteProps> {
       }
     }
 
+    // redirect to home page if there has no matched route
+    if (!state.currentRouteMeta && typeof window !== 'undefined') {
+      const isPrefixLocale =
+        state.currentLocale !== locales[0]?.name && state.currentLocale !== '*';
+      const rootPath = isPrefixLocale ? `/${state.currentLocale}` : '/';
+
+      window.location.replace(rootPath);
+
+      // just to avoid throw error
+      state.currentRouteMeta = {};
+    }
+
     // find nav in reverse way to fallback to the first nav
     if (navs[state.currentLocale]) {
       for (let i = navs[state.currentLocale].length - 1; i >= 0; i -= 1) {
         const nav = navs[state.currentLocale][i];
+        const items = [nav].concat(nav.children).filter(Boolean);
+        const matched = items.find(
+          item =>
+            item.path &&
+            new RegExp(`^${item.path.replace(/\.html$/, '')}(/|\.|$)`).test(location.pathname),
+        );
 
-        if (
-          nav.path &&
-          new RegExp(`^${nav.path.replace(/\.html$/, '')}(/|\.|$)`).test(location.pathname)
-        ) {
-          navPath = nav.path;
+        if (matched) {
+          navPath = matched.path;
           break;
         }
       }
@@ -283,17 +299,23 @@ export default class Layout extends Component<ILayoutProps & RouteProps> {
   );
 
   render() {
-    const { mode, title, desc, logo, repoUrl, locales, algolia, children } = this.props;
+    const { mode, title, desc, logo, repository, locales, algolia, children } = this.props;
+    const { url: repoUrl, branch } = repository;
     const { navs, menus, menuCollapsed, currentLocale, currentSlug, currentRouteMeta } = this.state;
     const siteMode = this.props.mode === 'site';
     const showHero = siteMode && currentRouteMeta.hero;
     const showFeatures = siteMode && currentRouteMeta.features;
-    const showSideMenu = currentRouteMeta.sidemenu !== false && !showHero && !showFeatures;
+    const showSideMenu =
+      currentRouteMeta.sidemenu !== false &&
+      !showHero &&
+      !showFeatures &&
+      !currentRouteMeta.gapless;
     const showSlugs =
       !showHero &&
       !showFeatures &&
       Boolean(currentRouteMeta.slugs?.length) &&
-      (currentRouteMeta.toc === 'content' || currentRouteMeta.toc === undefined);
+      (currentRouteMeta.toc === 'content' || currentRouteMeta.toc === undefined) &&
+      !currentRouteMeta.gapless;
     const isCN =
       currentLocale === 'zh-CN' || (currentLocale === '*' && locales[0]?.name === 'zh-CN');
     let updatedTime: any = new Date(currentRouteMeta.updatedTime);
@@ -323,7 +345,7 @@ export default class Layout extends Component<ILayoutProps & RouteProps> {
           routeMeta: currentRouteMeta,
           rootPath:
             !locales.length || currentLocale === locales[0].name ? '/' : `/${currentLocale}`,
-          algolia
+          algolia,
         }}
       >
         <div
@@ -331,6 +353,7 @@ export default class Layout extends Component<ILayoutProps & RouteProps> {
           data-show-sidemenu={String(showSideMenu)}
           data-show-slugs={String(showSlugs)}
           data-site-mode={siteMode}
+          data-gapless={String(!!currentRouteMeta.gapless)}
         >
           <Navbar
             navPrefix={<SearchBar routes={this.props.route.routes} />}
@@ -349,10 +372,14 @@ export default class Layout extends Component<ILayoutProps & RouteProps> {
           {showFeatures && this.renderFeatures(currentRouteMeta.features)}
           <div className="__dumi-default-layout-content">
             {children}
-            {!showHero && !showFeatures && currentRouteMeta.filePath && (
+            {!showHero && !showFeatures && currentRouteMeta.filePath && !currentRouteMeta.gapless && (
               <div className="__dumi-default-layout-footer-meta">
                 {repoPlatform && (
-                  <a target="_blank" href={`${repoUrl}/edit/master/${currentRouteMeta.filePath}`}>
+                  <a
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href={`${repoUrl}/edit/${branch}/${currentRouteMeta.filePath}`}
+                  >
                     {isCN
                       ? `在 ${repoPlatform} 上编辑这篇文档`
                       : `Edit this doc on ${repoPlatform}`}
